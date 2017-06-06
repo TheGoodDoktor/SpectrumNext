@@ -73,7 +73,7 @@ attrib_loop:
 	inc hl		; inc sprite attrib pointer
 
 	dec d		; decrement counter
-	jr nz, upload_loop	; loop back if not zero
+	jr nz, attrib_loop	; loop back if not zero
 
 ret
 
@@ -93,7 +93,7 @@ incbin "tree.spr"
 
 sprite_test:
 
-	; upload data to sprite pattern 2
+	; upload data to sprite pattern 2 - works
 	ld a, 2
 	ld hl, sprite_data
 	call upload_sprite_pattern
@@ -102,22 +102,32 @@ sprite_test:
 	ld bc,kSpriteSelectPort
 	ld a, 0	; sprite 0
 	out (c), a
+
+	ld h,$4
 	
+
 	; setup sprite attributes
 	ld bc, kSpriteAttribPort
-	ld a, 128
-	out(c), a	; x = 128
-	out(c), a	; y = 128
+testlp:	
+	;ld a, d	; co-ordinate
+	ld a, 20
+	add a, h
+	out(c), a	; x
+	out(c), a	; y
 	ld a,0		; no palette offset, rotate or flip
 	out(c), a	
-	ld a,130	; pattern 2 - visible
+	ld a,$c0	; pattern 2 - visible
+	sub h
 	out(c), a	
 	
-	; Set all sprites to be visible
+	dec h
+	jr nz, testlp
+	
+	; Set all sprites to be visible	- works
 	ld bc, kRegisteryRegNumber
-	ld a,21
+	ld a, kRegSprite
 	out(c), a
 	ld bc, kRegisteryValue
-	ld a,1
+	ld a,3
 	out(c), a	
 ret
