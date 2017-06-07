@@ -98,7 +98,9 @@ sprite_test:
 	ld hl, sprite_data
 	call upload_sprite_pattern
 	
-	; select sprite 
+	halt
+	
+	; select sprite - works
 	ld bc,kSpriteSelectPort
 	ld a, 0	; sprite 0
 	out (c), a
