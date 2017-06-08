@@ -1,6 +1,8 @@
 ; SPRTEST2 source
 org $8000
 
+start:
+
 ; enable sprite rendering on screen and in border
 LD BC,$243B	; register number
 LD A,$15		; sprite register
@@ -152,7 +154,7 @@ ADD IX,DE	; point IX to next sprite
 DEC H
 JR NZ,sprite_loop
 
-; check for keypress
+; check for space
 LD A,$7F
 IN A,($FE)
 RRA
@@ -161,11 +163,6 @@ XOR A
 RET
 
 sprite_states:	; 64 * 6 bytes
-REPT 64
-db 0	; x position
-db 0	; y position
-db 0
-db 0
-db 0	; x vel
-db 0	; y vel
-ENDM 
+
+
+end start
