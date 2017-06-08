@@ -28,25 +28,41 @@ kAYRegWritePort 	EQU $bffd
 
 ; Macro to write to 16-bit port number by using bc register
 ; Clobbers B, C
-out16bc MACRO port, val
+OutPort16 MACRO port, val
   ld bc, port
   out (c), val
 ENDM
 
 ; Macro to read from 16-bit port number using bc into a
 ; Clobbers BC, returns in A
-in16bca MACRO port
+InPort16 MACRO port
   ld bc, port
   in a,(c)
 ENDM
 
+; Set one of the Next registers
+; clobbers ABC
+SetNextRegister MACRO reg, val
+	ld a, reg
+	OutPort16 kRegisteryRegNumber, a	
+	ld a, val
+	OutPort16 kRegisteryValue, a
+ENDM
+
+; select which sprite to use
+; clobbers ABC
+SelectSprite MACRO spriteNo
+	ld a, spriteNo
+	OutPort16 kSpriteSelectPort, a
+ENDM
+
 ; Macro to write val to register reg in AY sound chip
 ; Clobbers ABC
-aysendabc MACRO reg, val
+SetAYRegister MACRO reg, val
   ld a, reg
-  out16bc kAYRegSelectPort, a
+  OutPort16 kAYRegSelectPort, a
   ld a, val
-  out16bc kAYRegWritePort, a
+  OutPort16 kAYRegWritePort, a
 ENDM
 
 ; Functions
@@ -61,9 +77,7 @@ ENDM
 upload_sprite_pattern:
 
 ; set pattern register
-out16bc kSpriteSelectPort, a
-;ld bc, kSpriteSelectPort
-;out (c),a	; A contains pattern number
+OutPort16 kSpriteSelectPort, a
 
 ; upload data
 ld bc, kSpritePatternDataPort	; pattern data output port
@@ -132,13 +146,8 @@ sprite_test:
 	halt
 	
 	; select sprite - works
-	out16bc kSpriteSelectPort, 0
-	;ld bc,kSpriteSelectPort
-	;ld a, 0	; sprite 0
-	;out (c), a
-
+	SelectSprite 0
 	ld h,$4
-	
 
 	; setup sprite attributes
 	ld bc, kSpriteAttribPort
@@ -158,13 +167,6 @@ testlp:
 	jr nz, testlp
 	
 	; Set all sprites to be visible	- works
-	out16bc kRegisteryRegNumber, kRegSprite
-	out16bc kRegisteryValue, 3
+	SetNextRegister kRegSprite, 3
 
-	;ld bc, kRegisteryRegNumber
-	;ld a, kRegSprite
-	;out(c), a
-	;ld bc, kRegisteryValue
-	;ld a,3
-	;out(c), a	
 ret
