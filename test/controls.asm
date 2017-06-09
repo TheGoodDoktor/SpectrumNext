@@ -10,11 +10,12 @@
 control_cur_val db 0
 
 ; defined keys
+; set some defaults
 control_key_right 	db 0
-control_key_left 	db 0
-control_key_down 	db 0
-control_key_up 		db 0
-control_key_fire 	db 0
+control_key_left 	db 1
+control_key_down 	db 2
+control_key_up 		db 3
+control_key_fire 	db 4
 
 ; Read Kempston Joystick
 ; clobbers ABC
@@ -27,10 +28,25 @@ ld (control_cur_val),a	; store values out
 ret
 
 ; ROM routine to return key pressed
+; E contains the key code (255 if no key is pressed)
 rom_key_scan equ $028E
 
+; wait for a key to be pressed
+; key pressed returned in A
+WaitForKey:
+	call rom_key_scan
+	ld a,e
+	cp 255
+	halt
+	jz WaitForKey	; loop back if no key is pressed
+
 ; Mr. Jones' keyboard test routine.
-ktest:
+; A contains the keyboard code
+; Carry flag set if key isn't pressed
+; clobbers abc
+; https://chuntey.wordpress.com/2012/12/19/how-to-write-zx-spectrum-games-chapter-2/
+
+TestKey:
 	ld c,a              ; key to test in c.
     and 7               ; mask bits d0-d2 for row.
 	inc a               ; in range 1-8.
@@ -50,4 +66,19 @@ ktest1:
 	rra                 ; rotate bit out of result.
 	dec c               ; loop counter.
 	jp nz,ktest1        ; repeat until bit for position in carry.
+	ret
+
+; Read the keyboard controls
+ReadKeys:
+	ld d,(control_cur_val)
+; check right pressed
+	ld a, (control_key_right)
+	call TestKey
+	jp c,read_left
+	ld a,d
+	or 1
+read_left:
+	; TODO: other keys
+
+	ld (control_cur_val),d	; put result in variable
 	ret
