@@ -7,12 +7,24 @@ kRegisteryRegNumber EQU $243b
 kRegisteryValue 	EQU $253b
 
 ; See: http://www.specnext.com/tbblue-io-port-system/
-kRegMachineId		EQU 0
-kRegVersion			EQU 1
-kRegReset			EQU 2
-kRegSetMachineType	EQU 3
-kRegSetRAMPage		EQU 4
-kRegSprite 			EQU 21
+kRegMachineId			EQU 0
+kRegVersion				EQU 1
+kRegReset				EQU 2
+kRegSetMachineType		EQU 3
+kRegSetRAMPage			EQU 4
+kRegPeripheral1			EQU 5
+kRegPeripheral2			EQU 6
+kRegTurboMode			EQU 7
+kRegPeripheral3			EQU 8
+kRegAntiBrick			EQU 10
+kRegLayer2Trans			EQU 20
+kRegSpriteSystem		EQU 21
+kRegLayer2OffX			EQU 22
+kRegLayer2OffY			EQU 23
+kRegRasterLineMSB		EQU 30
+kRegRasterLine			EQU 31
+kRegRasterLineIntCtrl	EQU 34
+kRegRasterLineIntVal	EQU 35
 
 ; sprites
 kSpriteSelectPort 		EQU $303b	; select sprite/pattern
@@ -21,8 +33,8 @@ kSpritePatternDataPort 	EQU $0055	; port to write pattern data
 kSpriteAttribPort 		EQU $0057	; port to write sprite attributes (position etc.)
 
 ; audio
-kAYRegSelectPort 	EQU $fffd
-kAYRegWritePort 	EQU $bffd
+kAudioRegSelectPort 	EQU $fffd
+kAudioRegWritePort 		EQU $bffd
 
 ; Macros
 
@@ -56,13 +68,13 @@ SelectSprite MACRO spriteNo
 	OutPort16 kSpriteSelectPort, a
 ENDM
 
-; Macro to write val to register reg in AY sound chip
+; Macro to write val to register reg in Audio sound chip
 ; Clobbers ABC
-SetAYRegister MACRO reg, val
+SetAudioRegister MACRO reg, val
   ld a, reg
-  OutPort16 kAYRegSelectPort, a
+  OutPort16 kAudioRegSelectPort, a
   ld a, val
-  OutPort16 kAYRegWritePort, a
+  OutPort16 kAudioRegWritePort, a
 ENDM
 
 ; Functions
@@ -74,6 +86,8 @@ ENDM
 ; A		: pattern number 
 ; HL	: pointer to pattern data (16*16 bytes)
 ; Affects registers: A,B,C,D,HL
+PROC
+LOCAL upload_loop
 upload_sprite_pattern:
 
 ; set pattern register
@@ -82,7 +96,7 @@ OutPort16 kSpriteSelectPort, a
 ; upload data
 ld bc, kSpritePatternDataPort	; pattern data output port
 ld d,0			; set counter to 0 for 256 iterations
-upload_loop:
+ upload_loop:
 	ld a,(hl)	; copy sprite byte to A
 	out (c),a	; output to port
 	inc hl		; inc sprite pointer
@@ -90,6 +104,7 @@ upload_loop:
 	jr nz, upload_loop	; loop back if not zero
 
 ret
+ENDP
 
 ; upload sprite attribs
 ; basically copies straight from RAM
@@ -167,6 +182,6 @@ testlp:
 	jr nz, testlp
 	
 	; Set all sprites to be visible	- works
-	SetNextRegister kRegSprite, 3
+	SetNextRegister kRegSpriteSystem, 3
 
 ret
