@@ -1,0 +1,5 @@
+{
+    "command": "pasmo",
+    "args": ["--tapbas", "-d", "${fileBasename}", "dist/${fileBasenameNoExtension}.tap"],
+    "showOutput": "always"
+}

@@ -24,7 +24,6 @@ ReadKempston:
 ld bc,31
 in a,(c)
 ld (control_cur_val),a	; store values out
-
 ret
 
 ; ROM routine to return key pressed
@@ -38,7 +37,8 @@ WaitForKey:
 	ld a,e
 	cp 255
 	halt
-	jz WaitForKey	; loop back if no key is pressed
+	jr WaitForKey	; loop back if no key is pressed
+	ret
 
 ; Mr. Jones' keyboard test routine.
 ; A contains the keyboard code
@@ -80,5 +80,5 @@ ReadKeys:
 read_left:
 	; TODO: other keys
 
-	ld (control_cur_val),d	; put result in variable
+	ld (control_cur_val),a	; put result in variable
 	ret
