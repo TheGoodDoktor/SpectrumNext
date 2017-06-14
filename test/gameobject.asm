@@ -26,8 +26,12 @@ LD IX, game_objects
 gobject_update_loop:
 
     ; call update function
-    LD HL, (IX + 8)
-    ;CALL (HL)
+    LD L, (IX + 8)
+	LD H, (IX + 9)
+	LD DE, return_point
+	push DE
+    JP (HL)
+return_point:
 
     ; update X position
     LD DE, (IX + 0)
@@ -38,6 +42,8 @@ gobject_update_loop:
     LD DE, (IX + 2)
     LD HL, (IX + 6)
     ADD HL,DE
+	
+	; TODO: 
     
     LD HL, kGameObjectSize
     ADD IX,HL
