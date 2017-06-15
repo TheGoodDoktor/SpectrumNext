@@ -51,7 +51,8 @@ rom_fontdata EQU $3D00
 ; last key pressed
 last_k EQU $5C08‬
 
-; pointer to font - 256
+; pointer to font - 256 (32 * 8)
+; Space is the first character draw which is ASCII code 32, this is why we have the (32 * 8) offset
 font_ptr EQU $5C36
 
 ; pointer to start of UDG memory
