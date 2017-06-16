@@ -1,5 +1,10 @@
 ; Routine for manipulating the spectrum screen
 
+org $8000
+start:
+call run_map_test
+ret 
+
 ; used to store coords for functions
 xcoord db 0
 ycoord db 0
@@ -45,6 +50,7 @@ get_spec_screen_addr:
 ; screen size in cells is 32x24
 ; B : Y Pos
 ; C	: X Pos
+; return address in DE
 spec_screen_char_addr:
 	ld a,b              ; vertical position.
 	and 24              ; which segment, 0, 1 or 2?
@@ -76,6 +82,31 @@ char0:
 	djnz char0          ; repeat
 	ret
 
+	
+; Calculate address of attribute for character at (b, c).
+; returns address in DE
+; clobbers A,DE
+spec_screen_attr_addr:
+	ld a,b              ; x position.
+	rrca                ; multiply by 32.
+	rrca
+	rrca
+	ld e,a              ; store away in e.
+	and 3               ; mask bits for high byte.
+	add a,88            ; 88*256=22528, start of attributes.
+	ld d,a              ; high byte done.
+	ld a,e              ; get x*32 again.
+	and 224             ; mask low byte.
+	ld e,a              ; put in l.
+	ld a,c              ; get y displacement.
+	add a,e             ; add to low byte.
+	ld e,a              ; hl=address of attributes.
+	ret
+
+; set screen attribute
+; screen size in cells is 32x24
+; B : Y Pos
+; C	: X Pos
 
 ; Map layout
 ; screen
@@ -96,64 +127,138 @@ char0:
 ; screen def 
 ; 16 bytes big tile defs
 
+; pointers to screen data
+screen_data_ptr 	dw 0
+bigtile_data_ptr 	dw 0	
+tile_data_ptr 		dw 0
+tile_image_data_ptr dw 0
+
+; Draw a small tile at (B,C)
+; A is tile number
+draw_small_tile:
+	; calculate tile image addr
+	ld ix, (tile_data_ptr)	; make ix point to tile data ; todo: indirection?
+	; add a * 8 (8 bytes per tile)
+	ld d,0
+	ld e,a
+	rl e
+	rl d
+	rl e
+	rl d
+	rl e
+	rl d
+	add ix,de	; ix points to char def
+
+;>>> begin macro
+draw_tile_char MACRO chrNo, offx, offy
+	ld d, 0
+	ld e,(ix + chrNo)	; get character index
+	; add char number * 8
+	rl e
+	rl d
+	rl e
+	rl d
+	rl e
+	rl d
+	
+	; draw tile character (a) at (b,c)
+	ld hl, (tile_image_data_ptr)	; todo: indirection?
+	add hl,de	; add offset to image pointer
+		
+	push bc	; push coords
+	; add screen offset
+	ld a,offx
+	add a,b
+	ld b,a
+	ld a,offy
+	add a,c
+	ld c,a
+	; write attribute
+	call spec_screen_attr_addr
+	ld a,(ix + chrNo + 4)
+	ld (de),a
+	; write char
+	call spec_screen_draw_char
+	
+	pop bc	; pop coords
+ENDM
+; >>> end macro
+
+; draw the 4 chars of the tile
+draw_tile_char 0,0,0
+draw_tile_char 1,1,0
+draw_tile_char 2,0,1
+draw_tile_char 3,1,1	
+
+ret
+
+; draw a big tile at BC
+; a big tile index
+draw_big_tile:
+
+
+ret
+
+; >>>> TODO: move to a new file
+	
+; test function for the map code
+run_map_test:
+
+; set up pointers
+
+ld hl,tile_data
+ld (tile_data_ptr),hl
+
+ld hl,bigtile_data
+ld (bigtile_data_ptr),hl
+
+ld hl,tile_char_images
+ld (tile_image_data_ptr),hl
+
+ld hl,screen_data
+ld (screen_data_ptr),hl
+
+
+ld b,10
+ld c,10
+;ld hl, tile_char_images
+;call spec_screen_draw_char
+ld a,1
+call draw_small_tile
+
+ret
+
+; big tile data
+; 4x3
+big_tile_data:
+	; big tile 0
+	db 0,0,0,0
+	db 1,1,1,1
+	db 0,1,0,1
+	
+; screen data
+; 4 * 4 big tiles
+screen_data:
+	; screen 0
+	db 0,0,0,0
+	db 0,0,0,0
+	db 0,0,0,0
+	db 0,0,0,0
+
 ; tile character data
-; array of 4 character lookups
-tile_char_data:
+; array of 4 character lookups, 4 attributes
+tile_data:
+	; tile 0
 	db 0,0,0,0	; empty tile
-	db 1,1,1,1	; solid tile
+	db $38,$38,$38,$38	; black on white
+	; tile 1
+	db 1,2,2,1	; solid tile
+	db $38,$04,$38,$0f	; black on white
 
 ; bitmap data of tile characters
 tile_char_images:
 	db 0,0,0,0,0,0,0,0	; empty character
-	db $ff,$ff,$ff,$ff,$ff,$ff,$ff	; solid character
-	
-; Draw a small tile at (B,C)
-; A is tile number
-draw_small_tile_image:
-	; calculate tile image addr
-	ld hl, tile_char_data	; make hl point to tile data
-	; add a * 4 (4 bytes per tile)
-	ld e,0
-	ld d,a
-	rl d
-	rl e
-	rl d
-	rl e
-	add hl,de	; hl points to char def
-	push hl		; push tile def
+	db $aa,$55,$aa,$55,$aa,$55,$aa,$55	; chessboard character
+	db $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff	; solid character
 
-;>>> begin macro
-	pop hl		; pop tile def
-	ld b,(hl)	; get character index
-	inc hl		; inc pointer to tile
-	push hl		; push tile def
-	
-	; draw tile character (a) at (b,c)
-	ld hl, tile_char_images
-	; add char number * 8
-	ld e,0
-	ld d,a
-	rl d
-	rl e
-	rl d
-	rl e
-	rl d
-	rl e
-	add hl,de	; add offset to image pointer
-		
-	push bc	; push coords
-	push af
-	; add screen offset
-	ld a,0
-	add a,b
-	ld b,a
-	ld a,0
-	add a,c
-	ld c,a
-	call spec_screen_draw_char
-	pop af
-	pop bc	; pop coords
-; >>> end macro
-
-	ret
-
+end start
