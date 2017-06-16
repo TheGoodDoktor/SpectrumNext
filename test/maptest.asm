@@ -53,6 +53,12 @@ screen_data:
 	db 0,0,0,0
 	db 0,0,0,0
 
+; todo: 
+; level data
+; level width in screens
+; level height in screens	
+; level start screen no
+
 ; tile character data
 ; array of 4 character lookups, 4 attributes
 tile_data:

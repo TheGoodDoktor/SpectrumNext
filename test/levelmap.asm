@@ -160,7 +160,8 @@ draw_big_tile:
 ret
 
 ; draw a screen made out of big tiles
-; a contains screen number
+; A contains screen number
+; currently supports 256 screens per level which would use 4k
 draw_screen:
 	ld bc,0
 	ld (draw_big_tile_xy),bc
