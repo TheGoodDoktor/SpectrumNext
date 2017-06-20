@@ -77,4 +77,6 @@ tile_char_images:
 	db $aa,$55,$aa,$55,$aa,$55,$aa,$55	; chessboard character
 	db $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff	; solid character
 
+include "musictest.asm"
 end start
+

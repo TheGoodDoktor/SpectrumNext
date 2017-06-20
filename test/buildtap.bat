@@ -1,6 +1,6 @@
 set assembler=..\pasmo\pasmo.exe
-set input=hello.asm
-set output=hello.tap
+set input=maptest.asm
+set output=maptest.tap
 
 %assembler% --tapbas -I ..\common -d %input% %output%
 

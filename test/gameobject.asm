@@ -90,7 +90,6 @@ gobject_sprite_loop:
 	ld e, (ix + 0)	; load 16 bit X into DE
 	ld d, (ix + 1)
 	; shift DE right 4 places
-	rr e
 	rr d
 	rr e
 	rr d
@@ -98,6 +97,7 @@ gobject_sprite_loop:
 	rr d
 	rr e
 	rr d
+	rr e
 	ld a,e	; put shifted down X into A
 	out(c), a	; x
 	push de
@@ -105,7 +105,6 @@ gobject_sprite_loop:
 	ld e, (ix + 2)	; load 16 bit Y into DE
 	ld d, (ix + 3)
 	; shift DE right 4 places
-	rr e
 	rr d
 	rr e
 	rr d
@@ -113,6 +112,7 @@ gobject_sprite_loop:
 	rr d
 	rr e
 	rr d
+	rr e
 	ld a,e	; put shifted down Y into A
 	out(c), a	; y
 	
@@ -142,6 +142,9 @@ ret
 
 ; function to test game object system
 GameObjectTest:
+
+	ld a,2
+	call InitMusic
 	
 	SetNextRegister kRegSpriteSystem, 3
 	
@@ -151,6 +154,7 @@ gobject_test_loop:
 	
 	halt	; wait for vertical refresh
 	call UpdateGameObjectSprites
+	call UpdateMusic
 
 	; check for space
 	ld a,$7F
