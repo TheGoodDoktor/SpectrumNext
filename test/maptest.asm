@@ -4,6 +4,7 @@ call run_map_test
 
 ; map test functions
 include "levelmap.asm"
+include "gameobject.asm"
 
 
 ret 
@@ -34,6 +35,7 @@ ld a,0
 call draw_screen
 ;ld a,1
 ;call draw_small_tile_xy
+call GameObjectTest
 ret
 
 ; big tile data
