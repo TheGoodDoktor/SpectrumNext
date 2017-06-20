@@ -37,13 +37,15 @@ return_point:
     LD DE, (IX + 0)
     LD HL, (IX + 4)
     ADD HL,DE
+    LD (IX + 0),HL	; write new x pos back
 
     ; update Y position
     LD DE, (IX + 2)
     LD HL, (IX + 6)
     ADD HL,DE
+ 	LD (IX + 2),HL	; write new y pos back
 	
-	; TODO: 
+	; TODO: set sprite registers
     
     LD HL, kGameObjectSize
     ADD IX,HL
