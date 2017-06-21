@@ -154,11 +154,16 @@ gobject_test_loop:
 	
 	halt	; wait for vertical refresh
 	call UpdateGameObjectSprites
-	call UpdateMusic
+	;call UpdateMusic
 
 	; check for space
 	ld a,$7F
 	in a,($FE)
 	rra
 	JP C,gobject_test_loop
+	
+	; clear up music player
+	ld a,0
+	call InitMusic
+
 ret
