@@ -88,7 +88,7 @@ ENDM
 ; Affects registers: A,B,C,D,HL
 PROC
 LOCAL upload_loop
-upload_sprite_pattern:
+UploadSpritePattern:
 
 ; set pattern register
 OutPort16 kSpriteSelectPort, a
@@ -112,7 +112,7 @@ ENDP
 ; A: first sprite
 ; D: number of sprites
 ; Uses: A,B,C,D,HL
-upload_sprite_attribs:
+UploadSpriteAttribs:
 
 ld bc, kSpriteSelectPort
 out (c),a
@@ -134,54 +134,5 @@ attrib_loop:
 
 	dec d		; decrement counter
 	jr nz, attrib_loop	; loop back if not zero
-
-ret
-
-; declare sprite work area in RAM
-; store 16 sprites
-sprite_attribs:
-REPT 16
-	db 0	; X position (bits 0-7)
-	db 0	; Y position
-	db 0	; bits: 0: X MSB, 1: Rotate, 2: Y mirror, 3: X mirror, 4-7: Palette offset 
-	db 0	; bits: 0-5: pattern index, 6: Reserverd, 7: Visible flag
-ENDM
-
-; sprite test area
-sprite_data:
-incbin "tree.spr"
-
-sprite_test:
-
-	; upload data to sprite pattern 2 - works
-	ld a, 2
-	ld hl, sprite_data
-	call upload_sprite_pattern
-	
-	halt
-	
-	; select sprite - works
-	SelectSprite 0
-	ld h,$4
-
-	; setup sprite attributes
-	ld bc, kSpriteAttribPort
-testlp:	
-	;ld a, d	; co-ordinate
-	ld a, 20
-	add a, h
-	out(c), a	; x
-	out(c), a	; y
-	ld a,0		; no palette offset, rotate or flip
-	out(c), a	
-	ld a,$c0	; pattern 2 - visible
-	sub h
-	out(c), a	
-	
-	dec h
-	jr nz, testlp
-	
-	; Set all sprites to be visible	- works
-	SetNextRegister kRegSpriteSystem, 3
 
 ret
