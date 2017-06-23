@@ -172,7 +172,7 @@ ObjectCreatePtr dw 0
 ; A object type
 ; BC position (integer)
 ; object handle is activeGameObjects-1
-CreateGameObjectAt:
+CreateGameObject:
 	
 	push af
 	
@@ -259,8 +259,8 @@ KillGameObject:
 
 ret
 
-; Initialise our game objects
-InitGameObjects:
+; Initialise game object system
+InitGameObjectSystem:
 
 	ld ix,game_objects
 	ld hl,game_objects	; point hl to next object
@@ -285,7 +285,16 @@ object_init_loop;
 	ld (hl),game_objects
 ret
 
+; helper macro to create a game object at a specific position
+CreateGameObjectAt MACRO _type,_x,_y
+	ld a,_type
+	ld b,_x
+	ld c,_y
+	call CreateGameObject
+ENDM
+
 ; Test code 
+; TODO: move this to another file
 ; sprite test area
 tree_sprite_data:
 incbin "tree.spr"
@@ -333,16 +342,11 @@ GameObjectTest:
 	; setup object creation table & initialise game object system
 	ld hl, ObjectCreateTable
 	ld (ObjectCreatePtr),hl
-	call InitGameObjects
+	call InitGameObjectSystem
 	
-	ld a,1
-	ld b,128
-	ld c,128
-	call CreateGameObjectAt
-	ld a,1
-	ld b,80
-	ld c,80
-	call CreateGameObjectAt
+	; create some test objects
+	call CreateGameObjectAt 1,128,128
+	call CreateGameObjectAt 1,80,80
 
 	
 	SetNextRegister kRegSpriteSystem, 3	; make sprites visible
