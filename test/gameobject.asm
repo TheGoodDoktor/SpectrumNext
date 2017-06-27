@@ -58,9 +58,11 @@ gobject_update_loop:
     ld l, (ix + 8)
 	ld h, (ix + 9)
 	ld de, return_point
-	push de
+	push bc
+	push de	; return point for ret to jump to
     jp (hl)
 	return_point:
+	pop bc
 
 	; Apply velocity to game object
     ; update X position

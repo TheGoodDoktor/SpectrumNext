@@ -7,15 +7,15 @@
 ; 2 - down
 ; 3 - up
 ; 4 - fire
-control_cur_val db 0
+gControlCurVal db 0
 
 ; defined keys
 ; set some defaults
-control_key_right 	db 0
-control_key_left 	db 1
-control_key_down 	db 2
-control_key_up 		db 3
-control_key_fire 	db 4
+gControlKeyRight 	db 0
+gControlKeyLeft 	db 1
+gControlKeyDown 	db 2
+gControlKeyUp 		db 3
+gControlKeyFire 	db 4
 
 ; Read Kempston Joystick
 ; clobbers ABC
@@ -23,17 +23,17 @@ ReadKempston:
 
 ld bc,31
 in a,(c)
-ld (control_cur_val),a	; store values out
+ld (gControlCurVal),a	; store values out
 ret
 
 ; ROM routine to return key pressed
 ; E contains the key code (255 if no key is pressed)
-rom_key_scan equ $028E
+RomKeyScan equ $028E
 
 ; wait for a key to be pressed
 ; key pressed returned in A
 WaitForKey:
-	call rom_key_scan
+	call RomKeyScan
 	ld a,e
 	cp 255
 	halt
@@ -70,15 +70,32 @@ ktest1:
 
 ; Read the keyboard controls
 ReadKeys:
-	ld d,(control_cur_val)
-; check right pressed
-	ld a, (control_key_right)
-	call TestKey
-	jp c,read_left
-	ld a,d
-	or 1
-read_left:
-	; TODO: other keys
+	ld d,(gControlCurVal)
+	ld e, 1	; init bitmask
+	ld hl, gControlKeyRight	; load HL with address of first key
+	ld b, 5	; read 5 keys
+key_loop:
+	; check key pressed
+		ld a, (hl)
+		push bc	; preserve b (counter)
+		call TestKey
+		pop bc	; restore b (counter)
+		jp c,skip_key
+		ld a,d	; put control vals in A
+		or e	; or in bitmask
+		ld d,a	; put back in d
+	skip_key:	
+		sla e	; shift bitmask left
+		inc hl	; incrmement key pointer
+		djnz key_loop
 
-	ld (control_cur_val),a	; put result in variable
+	ld (gControlCurVal),a	; put result in variable
 	ret
+	
+; Update the control values
+UpdateControls:
+	ld a,0
+	ld (gControlCurVal),a
+	;call ReadKempston
+	;call ReadKeys
+ret

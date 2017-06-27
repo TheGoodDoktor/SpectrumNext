@@ -7,6 +7,7 @@ ret
 ; system includes
 include "specnext.asm"
 include "specscreen.asm"
+include "controls.asm"
 include "levelmap.asm"
 include "gameobject.asm"
 
@@ -30,8 +31,8 @@ RunMapTest:
 	M_SetScreenDataPtr gTestScreenData
 
 	; Init & play music
-	ld a,2
-	call InitMusic
+	;ld a,2
+	;call InitMusic
 	
 	; upload a sprite
 	ld a, 2
@@ -43,7 +44,7 @@ RunMapTest:
 	call InitGameObjectSystem
 	
 	; create some test objects
-	M_CreateGameObjectAt 1,128,128
+	M_CreateGameObjectAt 2,128,128
 	M_CreateGameObjectAt 1,80,80
 	
 	M_SetNextRegister kRegSpriteSystem, 3	; make sprites visible
@@ -55,6 +56,7 @@ RunMapTest:
 	; frame update loop
 update_loop:
 
+	call UpdateControls
 	call UpdateGameObjects
 	
 	halt	; wait for vertical refresh
@@ -67,8 +69,8 @@ update_loop:
 	jp c,update_loop
 	
 	; clear up music player - not working
-	ld a,0
-	call InitMusic
+	;ld a,0
+	;call InitMusic
 ret
 
 ; other includes for relocated data (org'ed to other locations)
