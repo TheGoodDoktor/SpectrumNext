@@ -1,12 +1,12 @@
 
 InitMusic
 
-	call musicdrv_init
+	call MusicdrvInit
 	call InitInterrupts
 ret
 
-musicdrv_init EQU 49152
-musicdrv_update EQU 49335
+MusicdrvInit 	EQU 49152
+MusicdrvUpdate 	EQU 49335
 
 include "interrupts.asm"
 

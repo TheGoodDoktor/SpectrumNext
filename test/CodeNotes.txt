@@ -1,0 +1,9 @@
+Programming notes
+
+Naming conventions
+
+Functions: MyFunction
+Globals: gMyGlobal
+Constants: kMyConstant
+Labels: my_label
+Macros: M_MyMacro

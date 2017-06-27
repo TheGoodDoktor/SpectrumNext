@@ -40,41 +40,41 @@ kAudioRegWritePort 		EQU $bffd
 
 ; Macro to write to 16-bit port number by using bc register
 ; Clobbers B, C
-OutPort16 MACRO port, val
+M_OutPort16 MACRO port, val
   ld bc, port
   out (c), val
 ENDM
 
 ; Macro to read from 16-bit port number using bc into a
 ; Clobbers BC, returns in A
-InPort16 MACRO port
+M_InPort16 MACRO port
   ld bc, port
   in a,(c)
 ENDM
 
 ; Set one of the Next registers
 ; clobbers ABC
-SetNextRegister MACRO reg, val
+M_SetNextRegister MACRO reg, val
 	ld a, reg
-	OutPort16 kRegisteryRegNumber, a	
+	M_OutPort16 kRegisteryRegNumber, a	
 	ld a, val
-	OutPort16 kRegisteryValue, a
+	M_OutPort16 kRegisteryValue, a
 ENDM
 
 ; select which sprite to use
 ; clobbers ABC
-SelectSprite MACRO spriteNo
+M_SelectSprite MACRO spriteNo
 	ld a, spriteNo
-	OutPort16 kSpriteSelectPort, a
+	M_OutPort16 kSpriteSelectPort, a
 ENDM
 
 ; Macro to write val to register reg in Audio sound chip
 ; Clobbers ABC
-SetAudioRegister MACRO reg, val
+M_SetAudioRegister MACRO reg, val
   ld a, reg
-  OutPort16 kAudioRegSelectPort, a
+  M_OutPort16 kAudioRegSelectPort, a
   ld a, val
-  OutPort16 kAudioRegWritePort, a
+  M_OutPort16 kAudioRegWritePort, a
 ENDM
 
 ; Functions
@@ -91,12 +91,13 @@ LOCAL upload_loop
 UploadSpritePattern:
 
 ; set pattern register
-OutPort16 kSpriteSelectPort, a
+M_OutPort16 kSpriteSelectPort, a
 
 ; upload data
 ld bc, kSpritePatternDataPort	; pattern data output port
 ld d,0			; set counter to 0 for 256 iterations
- upload_loop:
+	
+upload_loop:
 	ld a,(hl)	; copy sprite byte to A
 	out (c),a	; output to port
 	inc hl		; inc sprite pointer

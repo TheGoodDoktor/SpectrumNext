@@ -1,7 +1,5 @@
 ; mapping functions
 
-include "specscreen.asm"
-
 ; Map layout
 
 ; small tiles 2*2 characters
@@ -20,22 +18,43 @@ include "specscreen.asm"
 ; screen def 
 ; 16 bytes big tile defs
 
-; pointers to screen data
-screen_data_ptr 	dw 0
-bigtile_data_ptr 	dw 0	
-tile_data_ptr 		dw 0
-tile_image_data_ptr dw 0
+; pointers to various data sources required for generating screens
+gScreenDataPtr 		dw 0
+gBigTileDataPtr 	dw 0	
+gTileDataPtr 		dw 0
+gTileImageDataPtr 	dw 0
 
-draw_tile_xy dw 0
+; Macros for setting source data pointers
+M_SetTileDataPtr MACRO _ptr
+	ld hl,_ptr
+	ld (gTileDataPtr),hl
+ENDM
+
+M_SetBigTileDataPtr MACRO _ptr
+	ld hl,_ptr
+	ld (gBigTileDataPtr),hl
+ENDM
+
+M_SetTileImageDataPtr MACRO _ptr
+	ld hl,_ptr
+	ld (gTileImageDataPtr),hl
+ENDM
+
+M_SetScreenDataPtr MACRO _ptr
+	ld hl,_ptr
+	ld (gScreenDataPtr),hl
+ENDM
+
+gDrawTileXY dw 0	; temp store for tile drawing, TODO: try and use stack instead
 
 ; Draw a small tile at (B,C)
 ; A is tile number
-draw_small_tile_xy:
-	ld bc,(draw_tile_xy)
+DrawSmallTileXY:
+	ld bc,(gDrawTileXY)
 	
-draw_small_tile:
+DrawSmallTile:
 	; calculate tile image addr
-	ld ix, (tile_data_ptr)	; make ix point to tile data ; todo: indirection?
+	ld ix, (gTileDataPtr)	; make ix point to tile data ; todo: indirection?
 	; add a * 8 (8 bytes per tile)
 	ld d,0
 	ld e,a
@@ -48,7 +67,7 @@ draw_small_tile:
 	add ix,de	; ix points to char def
 
 ;>>> begin macro
-draw_tile_char MACRO chrNo, offx, offy
+M_DrawTileChar MACRO chrNo, offx, offy
 	ld d, 0
 	ld e,(ix + chrNo)	; get character index
 	; add char number * 8
@@ -60,7 +79,7 @@ draw_tile_char MACRO chrNo, offx, offy
 	rl d
 	
 	; draw tile character (a) at (b,c)
-	ld hl, (tile_image_data_ptr)	; todo: indirection?
+	ld hl, (gTileImageDataPtr)	; todo: indirection?
 	add hl,de	; add offset to image pointer
 		
 	push bc	; push coords
@@ -72,35 +91,35 @@ draw_tile_char MACRO chrNo, offx, offy
 	add a,c
 	ld c,a
 	; write attribute
-	call spec_screen_attr_addr
+	call SpecScreenAttrAddr
 	ld a,(ix + chrNo + 4)
 	ld (de),a
 	; write char
-	call spec_screen_draw_char
+	call SpecScreenDrawChar
 	
 	pop bc	; pop coords
 ENDM
 ; >>> end macro
 
 	; draw the 4 chars of the tile
-	draw_tile_char 0,0,0
-	draw_tile_char 1,1,0
-	draw_tile_char 2,0,1
-	draw_tile_char 3,1,1	
+	M_DrawTileChar 0,0,0
+	M_DrawTileChar 1,1,0
+	M_DrawTileChar 2,0,1
+	M_DrawTileChar 3,1,1	
 
 ret
 
 ; draw a big tile 
 ; A: big tile index
-draw_big_tile_xy dw 0
+gDrawBigTileXY dw 0
 
-draw_big_tile:
+DrawBigTile:
 
 	; store coords in memory
-	ld bc, (draw_big_tile_xy)
-	ld (draw_tile_xy),bc
+	ld bc, (gDrawBigTileXY)
+	ld (gDrawTileXY),bc
 		
-	ld ix, (bigtile_data_ptr)
+	ld ix, (gBigTileDataPtr)
 	
 	; 12 bytes per big tile so shift by 8 & 4 and add
 	; add a * 8 
@@ -133,26 +152,26 @@ draw_big_tile:
 			
 			push ix
 			push bc
-			call draw_small_tile_xy
+			call DrawSmallTileXY
 			pop bc
 			pop ix
 			
 			inc ix
 			
-			ld a,(draw_tile_xy)	; add 2 to x coord
+			ld a,(gDrawTileXY)	; add 2 to x coord
 			inc a
 			inc a
-			ld (draw_tile_xy),a
+			ld (gDrawTileXY),a
 			
 			djnz bt_xloop
 			
-		ld a,(draw_tile_xy)	; reset x coord
+		ld a,(gDrawTileXY)	; reset x coord
 		sub 8
-		ld (draw_tile_xy),a
-		ld a,(draw_tile_xy+1)
+		ld (gDrawTileXY),a
+		ld a,(gDrawTileXY+1)
 		inc a
 		inc a
-		ld (draw_tile_xy+1),a
+		ld (gDrawTileXY+1),a
 				
 		pop bc ; pop y counter
 	djnz bt_yloop
@@ -162,11 +181,11 @@ ret
 ; draw a screen made out of big tiles
 ; A contains screen number
 ; currently supports 256 screens per level which would use 4k
-draw_screen:
+DrawScreen:
 	ld bc,0
-	ld (draw_big_tile_xy),bc
+	ld (gDrawBigTileXY),bc
 	
-	ld ix, (screen_data_ptr)
+	ld ix, (gScreenDataPtr)
 	
 	; 16 bytes per screen
 	; add a * 16 
@@ -193,26 +212,28 @@ draw_screen:
 			ld a,(ix)	; load big tile number
 			push ix
 			push bc
-			call draw_big_tile
+			call DrawBigTile
 			pop bc
 			pop ix
 			inc ix
 			
-			ld a,(draw_big_tile_xy)	; add 8 to x coord
+			ld a,(gDrawBigTileXY)	; add 8 to x coord
 			add a,8	
-			ld (draw_big_tile_xy),a
+			ld (gDrawBigTileXY),a
 			
 			djnz scr_xloop
 		
 		; reset x		
 		xor a
-		ld (draw_big_tile_xy),a
+		ld (gDrawBigTileXY),a
 		
 		; increase y
-		ld a,(draw_big_tile_xy+1)
+		ld a,(gDrawBigTileXY+1)
 		add a,6
-		ld (draw_big_tile_xy+1),a
+		ld (gDrawBigTileXY+1),a
 				
 		pop bc ; pop y counter
 	djnz scr_yloop
 ret
+
+

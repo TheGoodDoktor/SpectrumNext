@@ -17,7 +17,7 @@ InterruptRoutine:
 	push de
 	push ix
 	; call music?
-	call musicdrv_update
+	call MusicdrvUpdate
 	rst 56	; ROM routine to read keys etc.
 	pop ix
 	pop de

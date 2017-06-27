@@ -1,16 +1,17 @@
 ; Game Object Code
-INCLUDE "specnext.asm"
 
-; Game Object
-
-kNoGameObjects EQU 16	
-
+; constants
+kNoGameObjects 	EQU 16	
 kGameObjectSize EQU 18	; 18 bytes per object
 
+; Globals
 ;activeGameObjects db 0	; number of active game objects
-freeGameObject dw game_objects	; pointer to free game object
+gFreeGameObjectPtr 	dw gGameObjects	; pointer to free game object
+gObjectCreatePtr 	dw 0			; pointer to object creation table
 
-game_objects:
+;Game object list
+; Uses macro to repeat the data structure
+gGameObjects:
 REPT kNoGameObjects
 ; Object is 18 bytes
 dw 0    ; +0 : 16 bits X (12:4 fixed point)
@@ -45,7 +46,7 @@ ret
 UpdateGameObjects:
 
 ld b,kNoGameObjects
-ld ix, game_objects
+ld ix, gGameObjects
 
 gobject_update_loop:
 
@@ -91,10 +92,10 @@ ret
 ; function to update the hardware sprites using the game object sprites
 UpdateGameObjectSprites:
 	
-	SelectSprite 0
+	M_SelectSprite 0
 
 	ld h,kNoGameObjects	; counter
-	ld ix, game_objects
+	ld ix, gGameObjects
 	ld bc, kSpriteAttribPort		; write to sprite attribs
 gobject_sprite_loop:
 
@@ -165,8 +166,6 @@ next_sprite:
 
 ret
 
-; pointer to object creation table
-ObjectCreatePtr dw 0
 
 ; Create Object at
 ; A object type
@@ -176,12 +175,12 @@ CreateGameObject:
 	
 	push af
 	
-	ld ix,(freeGameObject)
+	ld ix,(gFreeGameObjectPtr)
 	
 	;TODO: if free object is null we have run out of game objects
 	
 	; update free pointer
-	ld hl,freeGameObject
+	ld hl,gFreeGameObjectPtr
 	ld a, (ix)
 	ld (hl),a
 	inc hl
@@ -235,7 +234,7 @@ CreateGameObject:
 	ld d,0
 	ld e,a
 	push ix
-	ld ix,(ObjectCreatePtr)
+	ld ix,(gObjectCreatePtr)
 	add ix,de	; HL points to table entry
 	ld l, (ix+0)	; extract pointer into DE
 	ld h, (ix+1)
@@ -246,7 +245,7 @@ ret
 ; IX points to object
 KillGameObject:
 
-	ld hl,(freeGameObject)
+	ld hl,(gFreeGameObjectPtr)
 
 	ld (ix+0),l	; point first 2 bytes of object to old free pointer
 	ld (ix+1),h
@@ -254,16 +253,18 @@ KillGameObject:
 	ld a,1		; set flags of object to be 'killed'
 	ld (ix+10),a
 
-	; todo: point freeGameObject at ix
-	ld (freeGameObject),ix
+	; Update free object pointer
+	ld (gFreeGameObjectPtr),ix
 
 ret
 
 ; Initialise game object system
+; hl points to creation table
 InitGameObjectSystem:
 
-	ld ix,game_objects
-	ld hl,game_objects	; point hl to next object
+	ld (gObjectCreatePtr),hl
+	ld ix,gGameObjects
+	ld hl,gGameObjects	; point hl to next object
 	ld de, kGameObjectSize
 	add hl,de
 	ld b,kNoGameObjects
@@ -281,91 +282,14 @@ object_init_loop;
 	add ix,de
 	djnz object_init_loop
 	
-	ld hl,freeGameObject
-	ld (hl),game_objects
+	ld hl,gFreeGameObjectPtr
+	ld (hl),gGameObjects
 ret
 
 ; helper macro to create a game object at a specific position
-CreateGameObjectAt MACRO _type,_x,_y
+M_CreateGameObjectAt MACRO _type,_x,_y
 	ld a,_type
 	ld b,_x
 	ld c,_y
 	call CreateGameObject
 ENDM
-
-; Test code 
-; TODO: move this to another file
-; sprite test area
-tree_sprite_data:
-incbin "tree.spr"
-
-; null creation function
-NullCreate:
-ret
-
-; test creation function
-TestCreate:
-	; set velocity
-	ld (ix + 4), 1
-	ld (ix + 6), 1
-   
-	; set update function
-	ld hl, TestUpdate
-	ld (ix + 8), l
-	ld (ix + 9), h
-	
-	; set sprite image
-	ld (ix+11), 2
-ret
-
-; test update function
-TestUpdate:
-ret
-
-; object creation table
-; list of creation function pointers
-ObjectCreateTable:
-	dw NullCreate
-	dw TestCreate
-	
-; function to test game object system
-GameObjectTest:
-
-	ld a,2
-	call InitMusic
-	
-	; upload a sprite
-	ld a, 2
-	ld hl, tree_sprite_data
-	call UploadSpritePattern
-	
-	; setup object creation table & initialise game object system
-	ld hl, ObjectCreateTable
-	ld (ObjectCreatePtr),hl
-	call InitGameObjectSystem
-	
-	; create some test objects
-	call CreateGameObjectAt 1,128,128
-	call CreateGameObjectAt 1,80,80
-
-	
-	SetNextRegister kRegSpriteSystem, 3	; make sprites visible
-	
-gobject_test_loop:
-
-	call UpdateGameObjects
-	
-	halt	; wait for vertical refresh
-	call UpdateGameObjectSprites
-
-	; check for space
-	ld a,$7F
-	in a,($FE)
-	rra
-	jp c,gobject_test_loop
-	
-	; clear up music player
-	ld a,0
-	call InitMusic
-
-ret

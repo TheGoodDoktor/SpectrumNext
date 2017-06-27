@@ -3,13 +3,13 @@
 
 
 ; used to store coords for functions
-xcoord db 0
-ycoord db 0
+gXCoord db 0
+gYCoord db 0
 
 ; get the spectrum screen address for a given coordinate & store in DE
-get_spec_screen_addr:
+GetSpecScreenAddr:
 	
-	ld a,(ycoord)       ; fetch vertical coordinate.
+	ld a,(gYCoord)       ; fetch vertical coordinate.
     ld e,a              ; store that in e.
 
 	; Find line within cell.
@@ -34,7 +34,7 @@ get_spec_screen_addr:
 	ld e,a              ; vertical coordinate calculation done.
 
 	; Add the horizontal element.
-	ld a,(xcoord)       ; x coordinate.
+	ld a,(gXCoord)       ; x coordinate.
 	rrca                ; only need to divide by 8.
 	rrca
 	rrca
@@ -48,7 +48,7 @@ get_spec_screen_addr:
 ; B : Y Pos
 ; C	: X Pos
 ; return address in DE
-spec_screen_char_addr:
+SpecScreenCharAddr:
 	ld a,b              ; vertical position.
 	and 24              ; which segment, 0, 1 or 2?
 	add a,64            ; 64*256 = 16384, Spectrum's screen memory.
@@ -68,8 +68,8 @@ spec_screen_char_addr:
 ; screen size in cells is 32x24
 ; B : Y Pos
 ; C	: X Pos
-spec_screen_draw_char:
-	call spec_screen_char_addr          ; find screen address for char.
+SpecScreenDrawChar:
+	call SpecScreenCharAddr          ; find screen address for char.
 	ld b,8              ; number of pixels high.
 char0:
 	ld a,(hl)           ; source graphic.
@@ -83,7 +83,7 @@ char0:
 ; Calculate address of attribute for character at (b, c).
 ; returns address in DE
 ; clobbers A,DE
-spec_screen_attr_addr:
+SpecScreenAttrAddr:
 	ld a,b              ; x position.
 	rrca                ; multiply by 32.
 	rrca
