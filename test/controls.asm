@@ -1,5 +1,7 @@
 ; control code
 
+include "keycodes.asm"
+
 ; Current controller state
 ; bit mappings mimic kempston
 ; 0	- right
@@ -11,20 +13,19 @@ gControlCurVal db 0
 
 ; defined keys
 ; set some defaults
-gControlKeyRight 	db 0
-gControlKeyLeft 	db 1
-gControlKeyDown 	db 2
-gControlKeyUp 		db 3
-gControlKeyFire 	db 4
+gControlKeyRight 	db Key_P	; P
+gControlKeyLeft 	db Key_O	; O
+gControlKeyDown 	db Key_A	; A
+gControlKeyUp 		db Key_Q	; Q
+gControlKeyFire 	db Key_M	; M
 
 ; Read Kempston Joystick
 ; clobbers ABC
 ReadKempston:
-
-ld bc,31
-in a,(c)
-ld (gControlCurVal),a	; store values out
-ret
+	ld bc,31
+	in a,(c)
+	ld (gControlCurVal),a	; store values out
+	ret
 
 ; ROM routine to return key pressed
 ; E contains the key code (255 if no key is pressed)
@@ -70,7 +71,8 @@ ktest1:
 
 ; Read the keyboard controls
 ReadKeys:
-	ld d,(gControlCurVal)
+	ld a,(gControlCurVal)
+	ld d,a
 	ld e, 1	; init bitmask
 	ld hl, gControlKeyRight	; load HL with address of first key
 	ld b, 5	; read 5 keys
@@ -80,7 +82,7 @@ key_loop:
 		push bc	; preserve b (counter)
 		call TestKey
 		pop bc	; restore b (counter)
-		jp c,skip_key
+		jr c,skip_key
 		ld a,d	; put control vals in A
 		or e	; or in bitmask
 		ld d,a	; put back in d
@@ -89,6 +91,7 @@ key_loop:
 		inc hl	; incrmement key pointer
 		djnz key_loop
 
+	ld a,d
 	ld (gControlCurVal),a	; put result in variable
 	ret
 	
@@ -97,5 +100,5 @@ UpdateControls:
 	ld a,0
 	ld (gControlCurVal),a
 	;call ReadKempston
-	;call ReadKeys
+	call ReadKeys
 ret
